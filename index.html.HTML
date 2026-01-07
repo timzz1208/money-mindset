@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全維度財商 (FQ) 深度評測系統</title>
+    <style>
+        :root {
+            --primary-color: #1a365d; /* 專業深藍 */
+            --accent-color: #c5a059;  /* 財富金 */
+            --bg-color: #f7f9fc;
+            --card-bg: #ffffff;
+            --text-color: #2d3748;
+            --border-radius: 12px;
+        }
+
+        body {
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        h1 { margin: 0; font-size: 1.8rem; }
+        p.subtitle { opacity: 0.9; margin-top: 10px; font-size: 0.9rem; }
+
+        .question-card {
+            background: var(--card-bg);
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--accent-color);
+        }
+
+        .question-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* 隱藏原生 Radio */
+        input[type="radio"] {
+            display: none;
+        }
+
+        /* 自定義選項樣式 */
+        .option-label {
+            display: block;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .option-label:hover {
+            border-color: var(--accent-color);
+            background-color: #fffaf0;
+        }
+
+        /* 選中狀態 */
+        input[type="radio"]:checked + .option-label {
+            border-color: var(--primary-color);
+            background-color: #ebf8ff;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        input[type="radio"]:checked + .option-label::after {
+            content: '✔';
+            position: absolute;
+            right: 15px;
+            color: var(--primary-color);
+        }
+
+        .btn-submit {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+
+        .btn-submit:hover {
+            background-color: #2c5282;
+        }
+
+        /* 結果區域 */
+        #result-area {
+            display: none;
+            margin-top: 40px;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            border-top: 8px solid var(--accent-color);
+        }
+
+        .score-display {
+            font-size: 3rem;
+            color: var(--primary-color);
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .level-title {
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+        }
+
+        .level-desc {
+            text-align: left;
+            background: #f7f9fc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .tag {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>全維度財商 (FQ) 深度評測</h1>
+        <p class="subtitle">基於行為經濟學與心理認知學的專業分析 | 講師專用版</p>
+    </header>
+
+    <form id="quizForm">
+        <div id="questions-container"></div>
+
+        <button type="button" class="btn-submit" onclick="calculateResult()">查看分析報告</button>
+    </form>
+
+    <div id="result-area">
+        <h2>評測結果分析</h2>
+        <div class="score-display">總分：<span id="score">0</span></div>
+        <div class="level-title" id="level-title">等級分析中...</div>
+        
+        <div class="level-desc">
+            <span class="tag">特徵描述</span>
+            <p id="level-desc-text"></p>
+            <hr style="border:0; border-top:1px solid #ddd; margin: 15px 0;">
+            <span class="tag" style="background: var(--accent-color);">專家建議</span>
+            <p id="level-advice-text"></p>
+        </div>
+        <button type="button" class="btn-submit" onclick="location.reload()" style="margin-top:20px; background-color: #718096;">重新測驗</button>
+    </div>
+</div>
+
+<script>
+    // 題目資料庫
+    const questions = [
+        {
+            title: "1. 心理認知：當您想到「金錢」時，您的第一反應通常是什麼？",
+            options: [
+                { text: "焦慮與壓力，覺得錢總是不夠用，擔心帳單付不出來。", value: 1 },
+                { text: "覺得錢是中性的，認為只要努力工作就能賺到。", value: 3 },
+                { text: "感到機會與自由，認為錢是可再生的資源，專注於創造價值。", value: 5 }
+            ]
+        },
+        {
+            title: "2. 時間偏好：如果現在給您 1 萬元現金，或者保證一年後給您 2 萬元，您會如何選擇？",
+            options: [
+                { text: "拿 1 萬元，現在就要享樂或解決急用。", value: 1 },
+                { text: "看情況，如果最近手頭緊就拿 1 萬，不緊就等一年。", value: 3 },
+                { text: "毫不猶豫選擇一年後的 2 萬元，我願意等待複利。", value: 5 }
+            ]
+        },
+        {
+            title: "3. 情緒控制：當股市或投資市場大跌 20% 時，您的心理狀態與行動是？",
+            options: [
+                { text: "恐慌、睡不著覺，立刻賣出以避免虧損更多。", value: 1 },
+                { text: "感到不安，選擇暫時不看帳戶，不做任何動作。", value: 3 },
+                { text: "感到興奮，視為特價時機，依照計畫加碼優質資產。", value: 5 }
+            ]
+        },
+        {
+            title: "4. 債務觀點：關於「債務」（借錢），您的觀點與現況是？",
+            options: [
+                { text: "經常使用信用卡循環利息或分期付款購買消費品。", value: 1 },
+                { text: "盡量不欠債，認為無債一身輕，但也不敢利用槓桿。", value: 3 },
+                { text: "善用「良性債務」購買能產生現金流的資產。", value: 5 }
+            ]
+        },
+        {
+            title: "5. 收支管理：您的收入與支出呈現什麼樣的關係？",
+            options: [
+                { text: "月光族，賺多少花多少，甚至入不敷出。", value: 1 },
+                { text: "有剩餘才會存起來，但若有獎金通常會犒賞自己花掉。", value: 3 },
+                { text: "嚴格執行「支付自己優先」，支出不隨收入增加而等比膨脹。", value: 5 }
+            ]
+        },
+        {
+            title: "6. 現金流象限：您目前的收入來源主要位於哪個位置？",
+            options: [
+                { text: "E象限：完全依賴薪資，一旦停止工作收入歸零。", value: 1 },
+                { text: "S象限：按件計酬或自僱，收入較高但手停口停。", value: 3 },
+                { text: "B/I象限：擁有多元收入（股息/房租/系統），睡覺也有進帳。", value: 5 }
+            ]
+        },
+        {
+            title: "7. 風險防禦：如果明天失業，現有流動資產能支撐多久？",
+            options: [
+                { text: "不到 1 個月，甚至需要借錢度日。", value: 1 },
+                { text: "大約 3 個月，會感到有些緊迫。", value: 3 },
+                { text: "6 個月以上，心態平穩。", value: 5 }
+            ]
+        },
+        {
+            title: "8. 複利運用：您對「複利」的實際運用程度為何？",
+            options: [
+                { text: "沒有任何長期投資計畫，錢多半放活存。", value: 1 },
+                { text: "有買儲蓄險或基金，但常常中斷或沒幾年就贖回。", value: 3 },
+                { text: "長期持有優質資產，將股息再投入，利用時間槓桿。", value: 5 }
+            ]
+        },
+        {
+            title: "9. 資產負債表：對於「資產」與「負債」的區分？",
+            options: [
+                { text: "擁有的多是車子、精品等持續貶值的東西。", value: 1 },
+                { text: "擁有一間自住房，但除此之外沒有其他投資。", value: 3 },
+                { text: "擁有股票、債券或出租房產，能定期產生現金流。", value: 5 }
+            ]
+        },
+        {
+            title: "10. 退休規劃：您是否有明確的退休規劃？",
+            options: [
+                { text: "完全沒有，覺得那是很久以後的事。", value: 1 },
+                { text: "有個模糊概念，但沒有具體計算過缺口。", value: 3 },
+                { text: "精確計算過資金缺口，有明確的投資組合與提領策略。", value: 5 }
+            ]
+        }
+    ];
+
+    // 結果資料庫
+    const results = {
+        level1: {
+            title: "等級一：財務求生者 (Financial Survivalist)",
+            desc: "處於「匱乏心態」的隧道中。深陷消費陷阱，對財務概念缺乏認知，極度看重眼前滿足，抗風險能力極低。",
+            advice: "急救期。重點在於開始記帳（看見黑洞）、剪掉信用卡（止血）、建立 1 個月緊急預備金（建立安全感）。先求生存，再談投資。"
+        },
+        level2: {
+            title: "等級二：財務勞碌者 (Financial Laborer)",
+            desc: "傳統的勤奮工作者。陷入「帕金森定律」（賺多花多）。認為存錢在銀行最安全，害怕投資風險。為了維持生活水準必須永無止境地工作。",
+            advice: "啟蒙期。重點在於理解通貨膨脹（隱形殺手）與資產負債的定義。必須開始把錢從銀行「叫醒」，讓它們去工作。"
+        },
+        level3: {
+            title: "等級三：財務覺醒者 (Financial Awakener)",
+            desc: "意識到理財重要性，嘗試投資但缺乏系統策略。容易受市場情緒影響（追高殺低）。有儲蓄習慣，但效率不高。",
+            advice: "轉型期。重點學習資產配置（不把雞蛋放同個籃子）、長期主義與複利效應。從「存錢」轉向「系統化投資」。"
+        },
+        level4: {
+            title: "等級四：財務建設者 (Financial Builder)",
+            desc: "具備高財商雛形。嚴格執行「支付自己優先」，擁有 6 個月預備金。理解良性債務，能控制情緒，不被市場噪音干擾。",
+            advice: "加速期。可以深入學習稅務規劃、槓桿運用（房地產/商業貸款）。目標是優化投資報酬率（ROI），擴大資產規模。"
+        },
+        level5: {
+            title: "等級五：財務自由大師 (Financial Master)",
+            desc: "擁有頂級「富足心態」。收入主要來自資產（I 象限）。極低時間偏好，思考的是未來 10 年甚至下一代的傳承。",
+            advice: "傳承期。重點在於資產保全、遺產規劃與價值觀傳承。思考財富的意義與社會責任，教導下一代駕馭財富。"
+        }
+    };
+
+    // 初始化頁面
+    function init() {
+        const container = document.getElementById('questions-container');
+        questions.forEach((q, index) => {
+            const card = document.createElement('div');
+            card.className = 'question-card';
+            card.innerHTML = `
+                <div class="question-title">${q.title}</div>
+                <div class="options">
+                    ${q.options.map((opt, i) => `
+                        <div>
+                            <input type="radio" name="q${index}" id="q${index}_${i}" value="${opt.value}">
+                            <label class="option-label" for="q${index}_${i}">${opt.text}</label>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // 計算結果
+    function calculateResult() {
+        let totalScore = 0;
+        let answeredCount = 0;
+
+        for (let i = 0; i < questions.length; i++) {
+            const radios = document.getElementsByName(`q${i}`);
+            let val = 0;
+            for (const radio of radios) {
+                if (radio.checked) {
+                    val = parseInt(radio.value);
+                    break;
+                }
+            }
+            if (val === 0) {
+                alert(`請回答第 ${i + 1} 題`);
+                // 滾動到未填寫的題目
+                document.getElementsByClassName('question-card')[i].scrollIntoView({behavior: "smooth", block: "center"});
+                return;
+            }
+            totalScore += val;
+        }
+
+        displayResult(totalScore);
+    }
+
+    // 顯示結果
+    function displayResult(score) {
+        const resultArea = document.getElementById('result-area');
+        const scoreSpan = document.getElementById('score');
+        const titleSpan = document.getElementById('level-title');
+        const descSpan = document.getElementById('level-desc-text');
+        const adviceSpan = document.getElementById('level-advice-text');
+
+        let resultData;
+
+        if (score <= 18) resultData = results.level1;
+        else if (score <= 26) resultData = results.level2;
+        else if (score <= 34) resultData = results.level3;
+        else if (score <= 42) resultData = results.level4;
+        else resultData = results.level5;
+
+        scoreSpan.innerText = score;
+        titleSpan.innerText = resultData.title;
+        descSpan.innerText = resultData.desc;
+        adviceSpan.innerText = resultData.advice;
+
+        // 隱藏表單，顯示結果 (或者保留表單在上方)
+        document.getElementById('quizForm').style.display = 'none';
+        resultArea.style.display = 'block';
+        
+        // 滾動到結果
+        resultArea.scrollIntoView({behavior: "smooth"});
+    }
+
+    // 啟動
+    init();
+
+</script>
+
+</body>
+</html>
